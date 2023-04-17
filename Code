@@ -1,0 +1,285 @@
+install.packages('rsconnect')
+install.packages('tidyverse')
+install.packages('shiny')
+library(rsconnect)
+library(shiny)
+library(tidyverse)
+
+ui <- fluidPage(
+  titlePanel("ExpAnalysis"),
+  sidebarLayout(
+    sidebarPanel(
+      fileInput("file", "Upload CSV File",
+                accept = c("text/csv",
+                           "text/comma-separated-values,text/plain",
+                           ".csv"))
+    ),
+    mainPanel(
+      tabsetPanel(
+        tabPanel("Hardness", plotOutput("hardnessPlot1"), verbatimTextOutput("hardnessPValue1"),
+                 plotOutput("hardnessPlot2"), verbatimTextOutput("hardnessPValue2"),
+                 plotOutput("hardnessPlot3"), verbatimTextOutput("hardnessPValue3"),
+                 plotOutput("hardnessPlot4"), verbatimTextOutput("hardnessPValue4"),
+                 plotOutput("hardnessPlot5"), verbatimTextOutput("hardnessPValue5")),
+        tabPanel("Gel Formation", plotOutput("gelFormationPlot1"), verbatimTextOutput("gelFormationPValue1"),
+                 plotOutput("gelFormationPlot2"), verbatimTextOutput("gelFormationPValue2"),
+                 plotOutput("gelFormationPlot3"), verbatimTextOutput("gelFormationPValue3"),
+                 plotOutput("gelFormationPlot4"), verbatimTextOutput("gelFormationPValue4"),
+                 plotOutput("gelFormationPlot5"), verbatimTextOutput("gelFormationPValue5")),
+        tabPanel("Drug Extraction", plotOutput("drugExtractionPlot1"), verbatimTextOutput("drugExtractionPValue1"),
+                 plotOutput("drugExtractionPlot2"), verbatimTextOutput("drugExtractionPValue2"),
+                 plotOutput("drugExtractionPlot3"), verbatimTextOutput("drugExtractionPValue3"),
+                 plotOutput("drugExtractionPlot4"), verbatimTextOutput("drugExtractionPValue4"),
+                 plotOutput("drugExtractionPlot5"), verbatimTextOutput("drugExtractionPValue5"))
+      )
+    )
+  )
+)
+
+server <- function(input, output, session) {
+  experimental_data <- reactiveVal()
+  
+  observeEvent(input$file, {
+    inFile <- input$file
+    if (is.null(inFile)) {
+      return(NULL)
+    }
+    df <- read.csv(inFile$datapath)
+    df <- df %>%
+      rename(PEO_conc = Var1, KSR_conc = Var2, HPMC_conc = Var3, PEG_conc = Var4, Temp = Var5)
+    experimental_data(df)
+  })
+  
+  output$hardnessPlot1 <- renderPlot({
+    req(experimental_data())
+    ggplot(experimental_data(), aes(x = PEO_conc, y = Hardness)) +
+      geom_point() +
+      stat_summary(fun = mean, geom = "bar", fill = "lightblue") +
+      labs(x = "PEO concentration (%)", y = "Hardness (kP)") +
+      theme_classic()
+  })
+  output$hardnessPValue1 <- renderText({
+    req(experimental_data())
+    lm_model <- lm(Hardness ~ PEO_conc, data = experimental_data())
+    anova_res <- anova(lm_model)
+    paste0("p-value: ", format(anova_res$`Pr(>F)`[1], digits = 4))
+  })
+  
+  output$hardnessPlot2 <- renderPlot({
+    req(experimental_data())
+    ggplot(experimental_data(), aes(x = KSR_conc , y = Hardness)) +
+      geom_point() +
+      stat_summary(fun = mean, geom = "bar", fill = "lightblue") +
+      labs(x = "KSR concentration (%)", y = "Hardness (kP)") +
+      theme_classic()
+  })
+  
+  
+  output$hardnessPValue2 <- renderText({
+    req(experimental_data())
+    lm_model <- lm(Hardness ~ KSR_conc, data = experimental_data())
+    anova_res <- anova(lm_model)
+    paste0("p-value: ", format(anova_res$`Pr(>F)`[1], digits = 4))
+  })
+  
+  output$hardnessPlot3 <- renderPlot({
+    req(experimental_data())
+    ggplot(experimental_data(), aes(x = HPMC_conc, y = Hardness)) +
+      geom_point() +
+      stat_summary(fun = mean, geom = "bar", fill = "lightblue") +
+      labs(x = "HPMC concentration (%)", y = "Hardness (kP)") +
+      theme_classic()
+  })
+  output$hardnessPValue3 <- renderText({
+    req(experimental_data())
+    lm_model <- lm(Hardness ~ HPMC_conc, data = experimental_data())
+    anova_res <- anova(lm_model)
+    paste0("p-value: ", format(anova_res$`Pr(>F)`[1], digits = 4))
+  })
+  
+  output$hardnessPlot4 <- renderPlot({
+    req(experimental_data())
+    ggplot(experimental_data(), aes(x = PEG_conc, y = Hardness)) +
+      geom_point() +
+      stat_summary(fun = mean, geom = "bar", fill = "lightblue") +
+      labs(x = "PEG concentration (%)", y = "Hardness (kP)") +
+      theme_classic()
+  })
+  output$hardnessPValue4 <- renderText({
+    req(experimental_data())
+    lm_model <- lm(Hardness ~ PEG_conc, data = experimental_data())
+    anova_res <- anova(lm_model)
+    paste0("p-value: ", format(anova_res$`Pr(>F)`[1], digits = 4))
+  })
+  
+  output$hardnessPlot5 <- renderPlot({
+    req(experimental_data())
+    ggplot(experimental_data(), aes(x = Temp, y = Hardness)) +
+      geom_point() +
+      stat_summary(fun = mean, geom = "bar", fill = "lightblue") +
+      labs(x = "Temperature (°C)", y = "Hardness (kP)") +
+      theme_classic()
+  })
+  output$hardnessPValue5 <- renderText({
+    req(experimental_data())
+    lm_model <- lm(Hardness ~ Temp, data = experimental_data())
+    anova_res <- anova(lm_model)
+    paste0("p-value: ", format(anova_res$`Pr(>F)`[1], digits = 4))
+  })
+  
+  # ... Gel Formation plots and p-values ...
+  output$gelFormationPlot1 <- renderPlot({
+    req(experimental_data())
+    ggplot(experimental_data(), aes(x = PEO_conc, y = as.numeric(Gel_formation) - 1, label = Gel_formation)) +
+      geom_text(size = 4) +
+      labs(x = "PEO concentration (%)", y = "Gel Formation (Yes/No)") +
+      theme_classic()
+  })
+  output$gelFormationPValue1 <- renderText({
+    req(experimental_data())
+    glm_model <- glm(Gel_formation ~ PEO_conc, data = experimental_data(), family = "binomial")
+    summary_res <- summary(glm_model)
+    paste0("p-value: ", format(summary_res$coefficients[2,4], digits = 4))
+  })
+  
+  output$gelFormationPlot2 <- renderPlot({
+    req(experimental_data())
+    ggplot(experimental_data(), aes(x = KSR_conc, y = as.numeric(Gel_formation) - 1, label = Gel_formation)) +
+      geom_text(size = 4) +
+      labs(x = "KSR concentration (%)", y = "Gel Formation (Yes/No)") +
+      theme_classic()
+  })
+  output$gelFormationPValue2 <- renderText({
+    req(experimental_data())
+    glm_model <- glm(Gel_formation ~ KSR_conc, data = experimental_data(), family = "binomial")
+    summary_res <- summary(glm_model)
+    paste0("p-value: ", format(summary_res$coefficients[2,4], digits = 4))
+  })
+  
+  # ... Repeat the same structure for HPMC_conc, PEG_conc, and Temp for Gel Formation
+  
+  output$gelFormationPlot3 <- renderPlot({
+    req(experimental_data())
+    ggplot(experimental_data(), aes(x = HPMC_conc, y = as.numeric(Gel_formation) - 1, label = Gel_formation)) +
+      geom_text(size = 4) +
+      labs(x = "HPMC concentration (%)", y = "Gel Formation (Yes/No)") +
+      theme_classic()
+  })
+  output$gelFormationPValue3 <- renderText({
+    req(experimental_data())
+    glm_model <- glm(Gel_formation ~ HPMC_conc, data = experimental_data(), family = "binomial")
+    summary_res <- summary(glm_model)
+    paste0("p-value: ", format(summary_res$coefficients[2,4], digits = 4))
+  })
+  
+  output$gelFormationPlot4 <- renderPlot({
+    req(experimental_data())
+    ggplot(experimental_data(), aes(x = PEG_conc, y = as.numeric(Gel_formation) - 1, label = Gel_formation)) +
+      geom_text(size = 4) +
+      labs(x = "PEG concentration (%)", y = "Gel Formation (Yes/No)") +
+      theme_classic()
+  })
+  output$gelFormationPValue4 <- renderText({
+    req(experimental_data())
+    glm_model <- glm(Gel_formation ~ PEG_conc, data = experimental_data(), family = "binomial")
+    summary_res <- summary(glm_model)
+    paste0("p-value: ", format(summary_res$coefficients[2,4], digits = 4))
+  })
+  
+  output$gelFormationPlot5 <- renderPlot({
+    req(experimental_data())
+    ggplot(experimental_data(), aes(x = Temp, y = as.numeric(Gel_formation) - 1, label = Gel_formation)) +
+      geom_text(size = 4) +
+      labs(x = "Temperature (°C)", y = "Gel Formation (Yes/No)") +
+      theme_classic()
+  })
+  output$gelFormationPValue5 <- renderText({
+    req(experimental_data())
+    glm_model <- glm(Gel_formation ~ Temp, data = experimental_data(), family = "binomial")
+    summary_res <- summary(glm_model)
+    paste0("p-value: ", format(summary_res$coefficients[2,4], digits = 4))
+  })
+  
+  # ... Drug Extraction Reduction plots and p-values ...
+  
+  output$drugExtractionPlot1 <- renderPlot({
+    req(experimental_data())
+    ggplot(experimental_data(), aes(x = PEO_conc, y = Drug_extraction_reduction)) +
+      geom_point() +
+      stat_summary(fun = mean, geom = "bar", fill = "lightblue") +
+      labs(x = "PEO concentration (%)", y = "Drug Extraction Reduction (%)") +
+      theme_classic()
+  })
+  output$drugExtractionPValue1 <- renderText({
+    req(experimental_data())
+    lm_model <- lm(Drug_extraction_reduction ~ PEO_conc, data = experimental_data())
+    anova_res <- anova(lm_model)
+    paste0("p-value: ", format(anova_res$`Pr(>F)`[1], digits = 4))
+  })
+  
+  output$drugExtractionPlot2 <- renderPlot({
+    req(experimental_data())
+    ggplot(experimental_data(), aes(x = KSR_conc, y = Drug_extraction_reduction)) +
+      geom_point() +
+      stat_summary(fun = mean, geom = "bar", fill = "lightblue") +
+      labs(x = "KSR concentration (%)", y = "Drug Extraction Reduction (%)") +
+      theme_classic()
+  })
+  output$drugExtractionPValue2 <- renderText({
+    req(experimental_data())
+    lm_model <- lm(Drug_extraction_reduction ~ KSR_conc, data = experimental_data())
+    anova_res <- anova(lm_model)
+    paste0("p-value: ", format(anova_res$`Pr(>F)`[1], digits = 4))
+  })
+  
+  output$drugExtractionPlot3 <- renderPlot({
+    req(experimental_data())
+    ggplot(experimental_data(), aes(x = HPMC_conc, y = Drug_extraction_reduction)) +
+      geom_point() +
+      stat_summary(fun = mean, geom = "bar", fill = "lightblue") +
+      labs(x = "HPMC concentration (%)", y = "Drug Extraction Reduction (%)") +
+      theme_classic()
+  })
+  output$drugExtractionPValue3 <- renderText({
+    req(experimental_data())
+    lm_model <- lm(Drug_extraction_reduction ~ HPMC_conc, data = experimental_data())
+    anova_res <- anova(lm_model)
+    paste0("p-value: ", format(anova_res$`Pr(>F)`[1], digits = 4))
+  })
+  
+  output$drugExtractionPlot4 <- renderPlot({
+    req(experimental_data())
+    ggplot(experimental_data(), aes(x = PEG_conc, y = Drug_extraction_reduction)) +
+      geom_point() +
+      stat_summary(fun = mean, geom = "bar", fill = "lightblue") +
+      labs(x = "PEG concentration (%)", y = "Drug Extraction Reduction (%)") +
+      theme_classic()
+  })
+  output$drugExtractionPValue4 <- renderText({
+    req(experimental_data())
+    lm_model <- lm(Drug_extraction_reduction ~ PEG_conc, data = experimental_data())
+    anova_res <- anova(lm_model)
+    paste0("p-value: ", format(anova_res$`Pr(>F)`[1], digits = 4))
+  })
+  
+  output$drugExtractionPlot5 <- renderPlot({
+    req(experimental_data())
+    ggplot(experimental_data(), aes(x = Temp, y = Drug_extraction_reduction)) +
+      geom_point() +
+      stat_summary(fun = mean, geom = "bar", fill = "lightblue") +
+      labs(x = "Temperature (°C)", y = "Drug Extraction Reduction (%)") +
+      theme_classic()
+  })
+  output$drugExtractionPValue5 <- renderText({
+    req(experimental_data())
+    lm_model <- lm(Drug_extraction_reduction ~ Temp, data = experimental_data())
+    anova_res <- anova(lm_model)
+    paste0("p-value: ", format(anova_res$`Pr(>F)`[1], digits = 4))
+  })
+  
+  
+  
+  
+}
+
+shinyApp(ui = ui, server = server)
